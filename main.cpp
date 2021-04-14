@@ -79,7 +79,7 @@ public:
     double Potential_energy();
     void Maxwell_dist(int *prob, double max_v, int num_segm);
     double Mean_sq_r();
-    void Write_coordinates(ofstream &coords);
+    void Write_coordinates(ofstream &coords, double radius);
 
 private:
     Particle *p;
@@ -97,9 +97,10 @@ Particles::Particles (int num, double max_vel, double dt, int cage) {
     for (int i = 0; i < number_of_particles; i++) {
         p[i].mass = 1;
 
-        p[i].x = p[i].x_0 = 1 * (i / (cage * cage) % (cage));
-        p[i].y = p[i].y_0 = 1 * (i / cage % cage);
-        p[i].z = p[i].z_0 = 1 * (i % cage);
+        int crt = cbrt(number_of_particles);
+        p[i].x = p[i].x_0 = double(cage) / crt * (i / (crt * crt) % (crt));
+        p[i].y = p[i].y_0 = double(cage) / crt * (i / crt % crt);
+        p[i].z = p[i].z_0 = double(cage) / crt * (i % crt);
         /*p[i].x = getRandomFloat(generator, 0, 100);
         p[i].y = getRandomFloat(generator, 0, 100);
         p[i].z = getRandomFloat(generator, 0, 100);*/
@@ -255,9 +256,9 @@ double Particles::Potential_energy () {
     return sqrt(p_x*p_x + p_y*p_y + p_z*p_z);
 }*/
 
-void Particles::Write_coordinates (ofstream &coords) {
+void Particles::Write_coordinates (ofstream &coords, double radius) {
     for (int i = 0; i < number_of_particles; i++) {
-        coords << p[i].x << ' ' << p[i].y << ' ' << p[i].z << ' ' << 0.2 << endl;
+        coords << p[i].x << ' ' << p[i].y << ' ' << p[i].z << ' ' << radius << endl;
     }
 }
 
@@ -284,16 +285,17 @@ double Particles::Mean_sq_r () {
 
 int main() {
     int number_of_particles = 216; // Only cubic!
-    double max_velocity = 15;
+    double max_velocity = 1;
+    double radius = 0.4;
     int cage = 10;
-    double dt = 0.001;
-    double T = 10;
+    double dt = 0.0001;
+    double T = 1;
     int num_segm = 100;
     int *prob = new int[num_segm];
     for (int i = 0; i < num_segm; i++) {
         prob[i] = 0;
     }
-    double mean_kin = 0;
+    double Temp = 0;
 
     ofstream coords("coords.txt");
     ofstream nrg("energies.csv");
@@ -311,12 +313,12 @@ int main() {
         double K = particles.Kinetic_energy();
         double P = particles.Potential_energy();
         nrg << K << "\t" << P << "\t" << K + P << endl;
-        mean_kin += K;
+        Temp += K;
         //cout << Momentum(particles, number_of_particles) << endl;
 
         // Writing coordinates
         coords << number_of_particles << endl << endl;
-        particles.Write_coordinates(coords);
+        particles.Write_coordinates(coords, radius);
 
         // Changing coordinates, calculating intermediate velocities
         particles.Update_coords(cage, dt);
@@ -329,7 +331,8 @@ int main() {
 
         // Collecting data
         particles.Maxwell_dist(prob, 2*max_velocity, num_segm);
-        r_sq << t << "\t" << particles.Mean_sq_r() << endl;
+        double temp = particles.Mean_sq_r();
+        r_sq << t << "\t" << temp << "\t" << log(t) << "\t" << log(temp) << endl;
     }
     // Writing data about maxwell distribution
     for (int i = 0; i < num_segm; i++) {
@@ -338,8 +341,8 @@ int main() {
     }
 
     // Writing mean square velocity
-    mean_kin /= T/dt * number_of_particles;
-    cout << mean_kin;
+    Temp /= T/dt * number_of_particles * 2 / 3;
+    cout << Temp;
 
 
     coords.close();
