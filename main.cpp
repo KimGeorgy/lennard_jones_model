@@ -42,8 +42,7 @@ float getRandomFloat(PRNG& generator, float minValue, float maxValue) {
     return distribution(generator.engine);
 }
 
-class Particle {
-public:
+struct Particle {
     double mass;
     double K;
     double U;
