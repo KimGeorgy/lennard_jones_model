@@ -139,7 +139,7 @@ void Particles::Calculate_forces (int cage) {
 
     for (int i = 0; i < number_of_particles; i++) {
         for (int j = 0; j < i; j++) { // Check later
-            for (int a = -1; a < 2; a++) {
+            /*for (int a = -1; a < 2; a++) {
                 for (int b = -1; b < 2; b++) {
                     for (int c = -1; c < 2; c++) {
                         double dx = p[j].x - p[i].x + a * cage;
@@ -165,6 +165,45 @@ void Particles::Calculate_forces (int cage) {
                         p[j].U += 4 * (pow(dr, -12) - pow(dr, -6));
                     }
                 }
+            }*/
+            double dx = fmod((p[j].x-p[i].x), cage);
+            if (dx < 0) {
+                dx += cage;
+            }
+            if (dx > cage/2.0) {
+                dx -= cage;
+            }
+
+            double dy = fmod((p[j].y-p[i].y), cage);
+            if (dy < 0) {
+                dy += cage;
+            }
+            if (dy > cage/2.0) {
+                dy -= cage;
+            }
+
+            double dz = fmod((p[j].z-p[i].z), cage);
+            if (dz < 0) {
+                dz += cage;
+            }
+            if (dz > cage/2.0) {
+                dz -= cage;
+            }
+
+            double dr = sqrt(dx*dx + dy*dy + dz*dz);
+            if (dr < cage) {
+                double F = - 48 * pow(dr, -13) + 24 * pow(dr, -7);
+                p[i].F_x += F * dx / dr;
+                p[i].F_y += F * dy / dr;
+                p[i].F_z += F * dz / dr;
+
+                p[j].F_x -= F * dx / dr;
+                p[j].F_y -= F * dy / dr;
+                p[j].F_z -= F * dz / dr;
+
+                // Lennard-Jones potential
+                p[i].U += 4 * (pow(dr, -12) - pow(dr, -6));
+                p[j].U += 4 * (pow(dr, -12) - pow(dr, -6));
             }
         }
     }
@@ -288,8 +327,8 @@ int main() {
     double max_velocity = 1;
     double radius = 0.4;
     int cage = 10;
-    double dt = 0.0001;
-    double T = 1;
+    double dt = 0.001;
+    double T = 10;
     int num_segm = 100;
     int *prob = new int[num_segm];
     for (int i = 0; i < num_segm; i++) {
